@@ -1,4 +1,6 @@
 import pygame
+from maze import Maze
+
 
 class SceneManager:
     def __init__(self, width, height):
@@ -6,18 +8,60 @@ class SceneManager:
         self.height = height
         self.current_scene = 0
         self.scenes = [
-            {"rect": pygame.Rect(100, 100, 100, 100), "color": (255, 255, 255)},
-            {"rect": pygame.Rect(300, 300, 100, 100), "color": (255, 255, 255)},
-            {"rect": pygame.Rect(500, 100, 100, 100), "color": (255, 255, 255)}
+            {
+                "rect": pygame.Rect(100, 100, 100, 100),
+                "color": (255, 255, 255),
+            },  # Scene 0
+            {"rect": None, "color": None},  # Scene 1: Maze
+            {"rect": None, "color": None},  # Scene 2: Purple cube scene with portal
         ]
         self.game_over = False
         self.show_next_button = False
         self.next_button = pygame.Rect(width // 2 - 50, height // 2 - 25, 100, 50)
 
+        # Create the maze for the second scene.
+        self.maze = Maze(width, height)
+
+        # Initialize the purple cube for the third scene.
+        self.purple_cube = pygame.Rect(600, 400, 50, 50)
+        self.purple_speed = 2  # How fast the purple cube chases the player.
+
+        # Define the white portal for the third scene.
+        self.portal = pygame.Rect(50, 50, 50, 50)
+
+    def update_third_scene(self, player_rect):
+        """
+        Moves the purple cube toward the player's center.
+        """
+        cube_speed = self.purple_speed
+        cube_center = self.purple_cube.center
+        player_center = player_rect.center
+        dx = player_center[0] - cube_center[0]
+        dy = player_center[1] - cube_center[1]
+        distance = (dx**2 + dy**2) ** 0.5
+        if distance != 0:
+            move_x = cube_speed * dx / distance
+            move_y = cube_speed * dy / distance
+        else:
+            move_x = move_y = 0
+        self.purple_cube.x += int(move_x)
+        self.purple_cube.y += int(move_y)
+
     def check_scene_transition(self, player_rect):
-        if self.current_scene < len(self.scenes):
-            if player_rect.colliderect(self.scenes[self.current_scene]["rect"]):
-                self.show_next_button = True
+        if self.current_scene == 1:
+            # Maze scene: check if player touches any transition zone.
+            for trans in self.maze.transitions:
+                if player_rect.colliderect(trans):
+                    self.show_next_button = True
+                    return
+        else:
+            # For scene 0, check collision with its rectangle.
+            if self.current_scene == 0:
+                scene_data = self.scenes[self.current_scene]
+                if scene_data["rect"] is not None and player_rect.colliderect(
+                    scene_data["rect"]
+                ):
+                    self.show_next_button = True
 
     def go_to_next_scene(self):
         if self.current_scene < len(self.scenes) - 1:
@@ -32,8 +76,16 @@ class SceneManager:
         elif self.show_next_button:
             self.draw_next_button(screen)
         else:
-            scene = self.scenes[self.current_scene]
-            pygame.draw.rect(screen, scene["color"], scene["rect"])
+            if self.current_scene == 1:
+                self.maze.draw(screen)
+            elif self.current_scene == 2:
+                # Third scene: draw black background, purple cube, and white portal.
+                screen.fill((0, 0, 0))
+                pygame.draw.rect(screen, (128, 0, 128), self.purple_cube)
+                pygame.draw.rect(screen, (255, 255, 255), self.portal)
+            else:
+                scene = self.scenes[self.current_scene]
+                pygame.draw.rect(screen, scene["color"], scene["rect"])
 
     def draw_next_button(self, screen):
         font = pygame.font.Font(None, 36)
