@@ -7,8 +7,6 @@ class Maze:
         self.height = height
         self.blueprint_file = blueprint_file
 
-        self.wall_color = (128, 128, 128)  # Grey walls
-        self.obstacle_color = (255, 0, 0)  # Red obstacles
         self.floor_color = (200, 200, 200)  # Light grey floor
         self.transition_color = (255, 255, 255)  # White for transition zone
 
@@ -17,8 +15,11 @@ class Maze:
         self.transitions = []  # For '1' cells
 
         self.blueprint_lines = []
-
         self.cell_size = 40
+
+        # Load images for walls and obstacles
+        self.wall_image = pygame.image.load("public/wall.png")
+        self.obstacle_image = pygame.image.load("public/obstacle.png")
 
         self.load_blueprint()
 
@@ -38,10 +39,16 @@ class Maze:
         num_rows = len(self.blueprint_lines)
         num_cols = max(len(line) for line in self.blueprint_lines)
 
-        # Calculate cell size so the maze fits within the given width and height.
         self.cell_size = min(self.width // num_cols, self.height // num_rows)
 
-        # Clear lists
+        # Resize images to fit the grid cells
+        self.wall_image = pygame.transform.scale(
+            self.wall_image, (self.cell_size, self.cell_size)
+        )
+        self.obstacle_image = pygame.transform.scale(
+            self.obstacle_image, (self.cell_size, self.cell_size)
+        )
+
         self.walls = []
         self.obstacles = []
         self.transitions = []
@@ -61,34 +68,27 @@ class Maze:
     def draw(self, screen):
         """
         Draws the maze on the provided screen:
-          - Fills the floor
-          - Draws walls, obstacles, and transition zones
+        - Draws walls, obstacles, and transition zones
         """
-        screen.fill(self.floor_color)
+        # screen.fill(self.floor_color)  # Comment out or remove this line to remove the floor
 
         for wall in self.walls:
-            pygame.draw.rect(screen, self.wall_color, wall)
+            screen.blit(self.wall_image, (wall.x, wall.y))
 
         for obs in self.obstacles:
-            pygame.draw.rect(screen, self.obstacle_color, obs)
+            screen.blit(self.obstacle_image, (obs.x, obs.y))
 
         for trans in self.transitions:
             pygame.draw.rect(screen, self.transition_color, trans)
 
     def check_collision(self, player_rect):
         """
-        Returns True if the player's rectangle collides with any red obstacle.
+        Returns True if the player's rectangle collides with any obstacle.
         """
-        for obs in self.obstacles:
-            if player_rect.colliderect(obs):
-                return True
-        return False
+        return any(player_rect.colliderect(obs) for obs in self.obstacles)
 
     def check_wall_collision(self, player_rect):
         """
-        Returns True if the player's rectangle collides with any grey wall.
+        Returns True if the player's rectangle collides with any wall.
         """
-        for wall in self.walls:
-            if player_rect.colliderect(wall):
-                return True
-        return False
+        return any(player_rect.colliderect(wall) for wall in self.walls)

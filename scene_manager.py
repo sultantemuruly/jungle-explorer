@@ -13,25 +13,32 @@ class SceneManager:
                 "color": (255, 255, 255),
             },  # Scene 0
             {"rect": None, "color": None},  # Scene 1: Maze
-            {"rect": None, "color": None},  # Scene 2: Purple cube scene with portal
+            {"rect": None, "color": None},  # Scene 2: Enemy
         ]
         self.game_over = False
         self.show_next_button = False
         self.next_button = pygame.Rect(width // 2 - 50, height // 2 - 25, 100, 50)
 
-        # Create the maze for the second scene.
         self.maze = Maze(width, height)
 
-        # Initialize the purple cube for the third scene.
-        self.purple_cube = pygame.Rect(600, 400, 50, 50)
-        self.purple_speed = 2  # How fast the purple cube chases the player.
+        # Enemy setup
+        self.enemy_image = pygame.image.load("public/enemy.png")
+        self.enemy_size = 50
+        self.enemy_image = pygame.transform.scale(
+            self.enemy_image, (self.enemy_size, self.enemy_size)
+        )
+        self.purple_cube = pygame.Rect(120, 50, self.enemy_size, self.enemy_size)
+        self.purple_speed = 2
 
-        # Define the white portal for the third scene.
         self.portal = pygame.Rect(50, 50, 50, 50)
+
+    @property
+    def enemy_rect(self):
+        return self.purple_cube
 
     def update_third_scene(self, player_rect):
         """
-        Moves the purple cube toward the player's center.
+        Moves the enemy toward the player's center.
         """
         cube_speed = self.purple_speed
         cube_center = self.purple_cube.center
@@ -49,13 +56,11 @@ class SceneManager:
 
     def check_scene_transition(self, player_rect):
         if self.current_scene == 1:
-            # Maze scene: check if player touches any transition zone.
             for trans in self.maze.transitions:
                 if player_rect.colliderect(trans):
                     self.show_next_button = True
                     return
         else:
-            # For scene 0, check collision with its rectangle.
             if self.current_scene == 0:
                 scene_data = self.scenes[self.current_scene]
                 if scene_data["rect"] is not None and player_rect.colliderect(
@@ -79,10 +84,8 @@ class SceneManager:
             if self.current_scene == 1:
                 self.maze.draw(screen)
             elif self.current_scene == 2:
-                # Third scene: draw black background, purple cube, and white portal.
-                screen.fill((0, 0, 0))
-                pygame.draw.rect(screen, (128, 0, 128), self.purple_cube)
                 pygame.draw.rect(screen, (255, 255, 255), self.portal)
+                screen.blit(self.enemy_image, (self.purple_cube.x, self.purple_cube.y))
             else:
                 scene = self.scenes[self.current_scene]
                 pygame.draw.rect(screen, scene["color"], scene["rect"])
